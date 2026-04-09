@@ -1,0 +1,75 @@
+{
+    "por_categoria": {
+        "('IDADE', 'mean')": {
+            "ATIVOS": 44.79,
+            "INATIVOS": NaN,
+            "PENSIONISTAS": NaN
+        },
+        "('IDADE', 'median')": {
+            "ATIVOS": 44.0,
+            "INATIVOS": NaN,
+            "PENSIONISTAS": NaN
+        },
+        "('VL_REMUNERACAO', 'mean')": {
+            "ATIVOS": 10549.19,
+            "INATIVOS": 0.0,
+            "PENSIONISTAS": 0.0
+        },
+        "('VL_REMUNERACAO', 'median')": {
+            "ATIVOS": 8061.1,
+            "INATIVOS": 0.0,
+            "PENSIONISTAS": 0.0
+        },
+        "('VL_REMUNERACAO', 'std')": {
+            "ATIVOS": 8149.68,
+            "INATIVOS": 0.0,
+            "PENSIONISTAS": 0.0
+        },
+        "('VL_REMUNERACAO', 'sum')": {
+            "ATIVOS": 357385308.43,
+            "INATIVOS": 0.0,
+            "PENSIONISTAS": 0.0
+        },
+        "('ID_SERVIDOR_MATRICULA', 'count')": {
+            "ATIVOS": 33878,
+            "INATIVOS": 0,
+            "PENSIONISTAS": 0
+        }
+    },
+    "top_cargos_salario": {
+        "DEFENSOR P\u00daBLICO SUPERIOR TITULAR - N\u00cdVEL 4": 53012.118863636366,
+        "SUBPROCURADOR-GERAL ADMINISTRATIVO": 52034.45,
+        "SUBPROCURADOR-GERAL LEGISLATIVO": 51534.45,
+        "ASSESSOR PADR\u00e3O II CCDPES-03": 46275.16,
+        "DEFENSOR P\u00daBLICO SUPERIOR - N\u00cdVEL 3": 45729.63490566037,
+        "PROCURADOR ADJUNTO": 45726.40928571428,
+        "PROCURADOR DE JUSTICA": 45133.27181818182,
+        "PROCURADOR DE JUSTI\u00c7A": 45031.02789473684,
+        "DESEMBARGADOR": 44651.441724137934,
+        "DEFENSOR P\u00daBLICO TITULAR - N\u00cdVEL 2": 43804.515901639345
+    },
+    "dist_sexo": {
+        "N\u00e3o Informado": 44701,
+        "Feminino": 20653,
+        "Masculino": 13225
+    },
+    "outliers_remuneracao": {
+        "limite_p99": 39569.73,
+        "contagem": 773
+    },
+    "top_orgaos_contagem": {
+        "SEDU": 27378,
+        "PMES": 17637,
+        "SESA": 8661,
+        "TJES": 4379,
+        "PCES": 4168,
+        "SEJUS": 2659,
+        "CBMES": 1879,
+        "SEFAZ": 1616,
+        "INCAPER": 1012,
+        "IASES": 871
+    },
+    "dist_uf": {
+        "ES": 78579
+    }
+}
