@@ -86,37 +86,38 @@ app.layout = html.Div([
             # Categoria
             html.Div([
                 html.Label("Categoria", className="sel-label"),
-                html.Select(
-                    id='filter-category',
-                    value="__all__",
-                    children=[html.Option("Todas as categorias", value="__all__")] +
-                             [html.Option(i, value=i) for i in sorted(df['CATEGORIA'].unique())],
-                    className="sel-native",
-                    **{"data-multi": "false"}
+                dcc.Dropdown(
+    id='filter-category',
+    options=[{"label": "Todas as categorias", "value": "__all__"}] +
+            [{"label": i, "value": i} for i in sorted(df['CATEGORIA'].unique())],
+    value="__all__",
+    clearable=False,
+    className="sel-native"
                 ),
             ], className="filter-group", style={"flex":"1"}),
             # Sexo
             html.Div([
                 html.Label("Sexo", className="sel-label"),
-                html.Select(
-                    id='filter-sex',
-                    value="__all__",
-                    children=[html.Option("Todos", value="__all__")] +
-                             [html.Option(i, value=i) for i in sorted([s for s in df['SEXO_DESC'].unique() if s != 'Não Informado']) + ['Não Informado']],
-                    className="sel-native",
+                dcc.Dropdown(
+    id='filter-sex',
+    options=[{"label": "Todos", "value": "__all__"}] +
+            [{"label": i, "value": i} for i in sorted([s for s in df['SEXO_DESC'].unique() if s != 'Não Informado']) + ['Não Informado']],
+    value="__all__",
+    clearable=False,
+    className="sel-native"
                 ),
             ], className="filter-group", style={"flex":"1"}),
             # Órgão — todos os 77
             html.Div([
                 html.Label("Órgão", className="sel-label"),
-                html.Select(
-                    id='filter-orgao',
-                    value="__all__",
-                    children=[html.Option("Todos os órgãos", value="__all__")] +
-                             [html.Option(i, value=i) for i in sorted([o for o in df['NO_ORGAO'].dropna().unique() if o != 'nan'])],
-                    className="sel-native",
-                    size=1,
-                ),
+                dcc.Dropdown(
+    id='filter-orgao',
+    options=[{"label": "Todos os órgãos", "value": "__all__"}] +
+            [{"label": i, "value": i} for i in sorted([o for o in df['NO_ORGAO'].dropna().unique() if o != 'nan'])],
+    value="__all__",
+    clearable=False,
+    className="sel-native"
+),
             ], className="filter-group", style={"flex":"1.5"}),
         ], className="filter-bar"),
 
