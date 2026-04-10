@@ -1469,14 +1469,19 @@ def open_pdf_modal(n_clicks, rd, active_tab, regime):
         plot_fig.update_layout(height=320, margin=dict(l=20, r=20, t=50, b=30))
         children = [
             html.H4(title, style={"margin": "0 0 8px", "color": "#175414", "fontSize": "0.95rem", "fontWeight": "700"}),
-            dcc.Graph(figure=plot_fig, config={"displayModeBar": False}, style={"height": "320px"}),
+            dcc.Graph(
+                figure=plot_fig,
+                config={"displayModeBar": False, "responsive": True},
+                className="report-plot",
+                style={"height": "320px", "width": "100%"},
+            ),
         ]
         if note:
             children.append(html.P(note, style={"margin": "6px 0 0", "fontSize": "0.8rem", "color": "#5d7a5b", "lineHeight": "1.55"}))
-        return html.Div(children, style={"background": "#fff", "border": "1px solid #dcead9", "borderRadius": "12px", "padding": "12px", "pageBreakInside": "avoid"})
+        return html.Div(children, className="report-graph-block", style={"background": "#fff", "border": "1px solid #dcead9", "borderRadius": "12px", "padding": "12px", "pageBreakInside": "avoid"})
 
     def pair(*blocks):
-        return html.Div(list(blocks), style={"display": "grid", "gridTemplateColumns": "repeat(2, minmax(0, 1fr))", "gap": "14px", "marginBottom": "14px"})
+        return html.Div(list(blocks), className="report-grid", style={"display": "grid", "gridTemplateColumns": "repeat(2, minmax(0, 1fr))", "gap": "14px", "marginBottom": "14px"})
 
     def table_block(title, component):
         return html.Div(
@@ -1822,7 +1827,17 @@ app.clientside_callback(
         if (n > 0) {
             var overlay = document.getElementById('pdf-overlay');
             if (overlay) overlay.style.display = 'none';
-            setTimeout(function(){ window.print(); }, 200);
+
+            setTimeout(function() {
+                window.dispatchEvent(new Event('resize'));
+                var plots = document.querySelectorAll('#print-report-content .js-plotly-plot');
+                plots.forEach(function(plot) {
+                    if (window.Plotly && window.Plotly.Plots) {
+                        window.Plotly.Plots.resize(plot);
+                    }
+                });
+                setTimeout(function(){ window.print(); }, 220);
+            }, 120);
         }
         return false;
     }
