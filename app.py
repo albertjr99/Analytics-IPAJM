@@ -383,52 +383,162 @@ def open_pdf_modal(n, rd):
     cc_data       = {r['CATEGORIA']: r['VL_REMUNERACAO'] for r in rd.get('rem_cat', [])}
     maior_rem_cat = max(cc_data, key=cc_data.get) if cc_data else "N/D"
 
-    analyses = [
-        ("Composição da Força de Trabalho",
-         f"O universo analisado abrange <strong>{rd['total']}</strong> servidores vinculados ao RPPS do "
-         f"Estado do Espírito Santo, distribuídos nas categorias: {cat_lines}. "
-         f"Este contingente representa a massa segurada sob gestão do IPAJM, constituindo a base fundamental para as "
-         f"projeções atuariais de curto, médio e longo prazo. A proporção entre ativos e inativos é indicador crítico "
-         f"do equilíbrio financeiro-atuarial do plano de benefícios, devendo ser monitorada trimestralmente."),
-        ("Perfil Demográfico e Envelhecimento",
-         f"A idade média da força de trabalho é de <strong>{rd['media_idade']} anos</strong>, com maior concentração "
-         f"na faixa etária <strong>{peak_faixa}</strong>, que reúne <strong>{peak_count} servidores</strong>. "
-         f"Este perfil etário aponta para uma força de trabalho madura, com impacto direto nas projeções de aposentadorias "
-         f"e na necessidade de reposição de quadros nos próximos exercícios. Do ponto de vista atuarial, a concentração "
-         f"etária elevada reforça a urgência de políticas de equilíbrio entre entradas e saídas do sistema previdenciário."),
-        ("Análise de Gênero e Longevidade",
-         f"A distribuição por sexo revela <strong>{pct_fem:.1f}% de servidoras do sexo feminino</strong> "
-         f"({fmt_int(int(fem))} servidoras) e <strong>{pct_masc:.1f}% do sexo masculino</strong> "
-         f"({fmt_int(int(masc))} servidores) sobre a base informada. Esta distribuição tem implicações atuariais "
-         f"relevantes, uma vez que tábuas de mortalidade e sobrevivência diferenciam longevidade por sexo. A maior "
-         f"presença feminina em carreiras como educação e saúde impacta o tempo médio de benefício e as projeções "
-         f"de pensão por morte, exigindo modelagem específica por segmento."),
-        ("Remuneração, Cargos e Impacto Financeiro",
-         f"A remuneração média geral do funcionalismo é de <strong>{rd['media_sal']}</strong>. A categoria "
-         f"<strong>{maior_rem_cat}</strong> registra a maior remuneração média entre as analisadas. O órgão com "
-         f"maior média salarial é <strong>{to_top.get('NO_ORGAO','N/D')}</strong> "
-         f"({fmt_brl(to_top.get('VL_REMUNERACAO',0))}). O cargo de maior remuneração média identificado é "
-         f"<strong>{tc_top.get('lbl','N/D')}</strong> ({fmt_brl(tc_top.get('VL_REMUNERACAO',0))}). "
-         f"A massa salarial total é indicador fundamental para o cálculo da alíquota de equilíbrio do plano, "
-         f"devendo ser monitorada continuamente em face de reajustes e reestruturações de carreiras."),
-        ("Contribuições Previdenciárias e Sustentabilidade",
-         f"O volume total de contribuições previdenciárias no período analisado alcança "
-         f"<strong>{rd['contrib']}</strong>. A sustentabilidade do regime de repartição depende diretamente da "
-         f"relação entre o fluxo de contribuições arrecadadas e o montante de benefícios pagos. Variações nessa "
-         f"relação exigem reavaliação periódica das hipóteses atuariais e, eventualmente, ajustes paramétricos no "
-         f"plano de custeio. Recomenda-se a realização de avaliação atuarial anual para verificação do equilíbrio "
-         f"financeiro de longo prazo do RPPS estadual."),
-    ]
+    # ── Estilos reutilizáveis para o relatório ──
+    _TH = {"background":"#175414","color":"white","padding":"7px 12px",
+           "fontSize":"0.6rem","textTransform":"uppercase","letterSpacing":"0.06em",
+           "textAlign":"center","fontFamily":"Plus Jakarta Sans,sans-serif","fontWeight":"700"}
+    _TD = {"padding":"6px 12px","fontSize":"0.78rem","color":"#2d4a2b","textAlign":"center"}
+    _TD_L = {**_TD, "textAlign":"left"}
+    _TBOX = {"width":"100%","borderCollapse":"collapse","border":"1px solid #c8ddc6",
+             "overflow":"hidden","marginTop":"10px"}
+    _SEC = {"background":"#f8fbf8","border":"1px solid #d4e6d2","borderLeft":"4px solid #175414",
+            "borderRadius":"10px","padding":"20px 24px","marginBottom":"14px",
+            "pageBreakInside":"avoid","breakInside":"avoid"}
+    _H3 = {"fontFamily":"'DM Serif Display',serif","fontSize":"1.15rem","color":"#175414",
+           "margin":"0 0 10px","paddingBottom":"8px","borderBottom":"2px solid #c8ddc6"}
+    _P = {"margin":"0 0 12px","lineHeight":"1.85","fontSize":"0.85rem","color":"#2d4a2b"}
 
+    def rpt_hdr():
+        return html.Div([
+            html.Div([
+                html.Img(src='/assets/logo-ipajm.png', style={"height":"34px","width":"auto"}),
+                html.Div([
+                    html.Div("IPAJM — Instituto de Previdência dos Servidores do Estado do Espírito Santo",
+                             style={"fontSize":"0.65rem","fontWeight":"700","color":"#175414",
+                                    "letterSpacing":"0.03em"}),
+                    html.Div(f"Relatório de Análise de Indicadores · {rd['update_date']}",
+                             style={"fontSize":"0.58rem","color":"#6b8e69",
+                                    "fontFamily":"'JetBrains Mono',monospace","marginTop":"2px"}),
+                ], style={"flex":"1"}),
+                html.Div(html.Img(src='/assets/Brasao_Governo.png', style={"height":"50px","width":"auto","filter":"brightness(0) invert(1)"}), style={"background":"#175414","borderRadius":"8px","padding":"8px 10px","display":"flex","alignItems":"center","justifyContent":"center"}),
+            ], style={"display":"flex","alignItems":"center","gap":"16px",
+                      "padding":"14px 0 10px","marginBottom":"18px",
+                      "borderBottom":"2px solid #175414"}),
+        ], className="report-page-header")
+
+    def mini_tbl(headers, rows):
+        return html.Table([
+            html.Thead(html.Tr([html.Th(h, style=_TH) for h in headers])),
+            html.Tbody([
+                html.Tr([html.Td(c, style=_TD_L if j == 0 else _TD) for j, c in enumerate(r)],
+                         style={"background":"#fff" if i % 2 == 0 else "#f8fbf8",
+                                "borderBottom":"1px solid #d4e6d2"})
+                for i, r in enumerate(rows)
+            ])
+        ], style=_TBOX)
+
+    # ── Mini-tabelas de apoio ──
+    cat_rows = [[k, fmt_int(v)] for k, v in cats.items()]
+    tbl_cat = mini_tbl(["Categoria", "Servidores"], cat_rows)
+
+    fe_rows = [[r['FAIXA_ETARIA'], fmt_int(int(r['count']))]
+               for r in rd.get('faixa_etaria', []) if int(r['count']) > 0]
+    tbl_fe = mini_tbl(["Faixa Etária", "Servidores"], fe_rows)
+
+    gen_rows = [[r['label'], fmt_int(int(r['value'])),
+                 f"{r['value']/total_sx*100:.1f}%" if total_sx else "—"]
+                for r in rd.get('dist_sexo', [])]
+    tbl_gen = mini_tbl(["Sexo", "Servidores", "%"], gen_rows)
+
+    org_rows = [[r['NO_ORGAO'], fmt_brl(r['VL_REMUNERACAO'])]
+                for r in reversed(rd.get('top_orgaos', []))]
+    tbl_org = mini_tbl(["Órgão (Top 10)", "Rem. Média"], org_rows)
+
+    cargo_rows = [[r['lbl'], fmt_brl(r['VL_REMUNERACAO'])]
+                  for r in reversed(rd.get('top_cargos', []))]
+    tbl_cargo = mini_tbl(["Cargo — Ativos (Top 10)", "Rem. Média"], cargo_rows)
+
+    rc_rows = [[r['CATEGORIA'], fmt_brl(r['VL_REMUNERACAO'])] for r in rd.get('rem_cat', [])]
+    tbl_rc = mini_tbl(["Categoria", "Rem. Média"], rc_rows)
+
+    # ── Seções de análise (com html.Strong em vez de <strong>) ──
+    sec_composicao = html.Div([
+        html.H3("1. Composição da Força de Trabalho", style=_H3),
+        html.P([
+            "O universo analisado abrange ", html.Strong(rd['total']),
+            " servidores vinculados ao RPPS do Estado do Espírito Santo, distribuídos nas categorias: ",
+            cat_lines, ". Este contingente representa a massa segurada sob gestão do IPAJM, constituindo "
+            "a base fundamental para as projeções atuariais de curto, médio e longo prazo. A proporção "
+            "entre ativos e inativos é indicador crítico do equilíbrio financeiro-atuarial do plano de "
+            "benefícios, devendo ser monitorada trimestralmente."
+        ], style=_P),
+        tbl_cat,
+    ], style=_SEC)
+
+    sec_demografico = html.Div([
+        html.H3("2. Perfil Demográfico e Envelhecimento", style=_H3),
+        html.P([
+            "A idade média da força de trabalho é de ", html.Strong(f"{rd['media_idade']} anos"),
+            ", com maior concentração na faixa etária ", html.Strong(peak_faixa),
+            ", que reúne ", html.Strong(f"{peak_count} servidores"), ". Este perfil etário aponta para "
+            "uma força de trabalho madura, com impacto direto nas projeções de aposentadorias e na "
+            "necessidade de reposição de quadros nos próximos exercícios. Do ponto de vista atuarial, a "
+            "concentração etária elevada reforça a urgência de políticas de equilíbrio entre entradas e "
+            "saídas do sistema previdenciário."
+        ], style=_P),
+        tbl_fe,
+    ], style=_SEC)
+
+    sec_genero = html.Div([
+        html.H3("3. Análise de Gênero e Longevidade", style=_H3),
+        html.P([
+            "A distribuição por sexo revela ",
+            html.Strong(f"{pct_fem:.1f}% de servidoras do sexo feminino"),
+            f" ({fmt_int(int(fem))} servidoras) e ",
+            html.Strong(f"{pct_masc:.1f}% do sexo masculino"),
+            f" ({fmt_int(int(masc))} servidores) sobre a base informada. Esta distribuição tem "
+            "implicações atuariais relevantes, uma vez que tábuas de mortalidade e sobrevivência "
+            "diferenciam longevidade por sexo. A maior presença feminina em carreiras como educação "
+            "e saúde impacta o tempo médio de benefício e as projeções de pensão por morte, exigindo "
+            "modelagem específica por segmento."
+        ], style=_P),
+        tbl_gen,
+    ], style=_SEC)
+
+    sec_remuneracao = html.Div([
+        html.H3("4. Remuneração, Cargos e Impacto Financeiro", style=_H3),
+        html.P([
+            "A remuneração média geral do funcionalismo é de ", html.Strong(rd['media_sal']),
+            ". A categoria ", html.Strong(maior_rem_cat),
+            " registra a maior remuneração média entre as analisadas. O órgão com maior média salarial é ",
+            html.Strong(to_top.get('NO_ORGAO', 'N/D')),
+            f" ({fmt_brl(to_top.get('VL_REMUNERACAO', 0))}). O cargo de maior remuneração média "
+            "identificado é ", html.Strong(tc_top.get('lbl', 'N/D')),
+            f" ({fmt_brl(tc_top.get('VL_REMUNERACAO', 0))}). A massa salarial total é indicador "
+            "fundamental para o cálculo da alíquota de equilíbrio do plano, devendo ser monitorada "
+            "continuamente em face de reajustes e reestruturações de carreiras."
+        ], style=_P),
+        tbl_org,
+        html.Div(style={"height":"10px"}),
+        tbl_cargo,
+    ], style=_SEC)
+
+    sec_contribuicao = html.Div([
+        html.H3("5. Contribuições Previdenciárias e Sustentabilidade", style=_H3),
+        html.P([
+            "O volume total de contribuições previdenciárias no período analisado alcança ",
+            html.Strong(rd['contrib']),
+            ". A sustentabilidade do regime de repartição depende diretamente da relação entre o fluxo "
+            "de contribuições arrecadadas e o montante de benefícios pagos. Variações nessa relação "
+            "exigem reavaliação periódica das hipóteses atuariais e, eventualmente, ajustes paramétricos "
+            "no plano de custeio. Recomenda-se a realização de avaliação atuarial anual para verificação "
+            "do equilíbrio financeiro de longo prazo do RPPS estadual."
+        ], style=_P),
+        tbl_rc,
+    ], style=_SEC)
+
+    # ── Conteúdo do relatório para impressão ──
     print_content = html.Div(id="print-report-content", children=[
+
+        # ═══ CAPA ═══
         html.Div([
             html.Div(style={"height":"60px"}),
             html.Div([
                 html.Img(src='/assets/logo-ipajm.png', style={
                     "height":"80px","filter":"brightness(0) invert(1)","display":"block","margin":"0 auto 28px"
                 }),
-                html.H1("Relatório Analítico Institucional", style={
-                    "fontFamily":"'DM Serif Display',serif","fontSize":"2.6rem","color":"#fff",
+                html.H1("Relatório de Análise de Indicadores", style={
+                    "fontFamily":"'DM Serif Display',serif","fontSize":"2.4rem","color":"#fff",
                     "textAlign":"center","margin":"0 0 8px"
                 }),
                 html.H2("Servidores do Estado do Espírito Santo", style={
@@ -437,19 +547,21 @@ def open_pdf_modal(n, rd):
                 }),
                 html.Div([
                     *[html.Div([
-                        html.Div(v, style={"fontSize":"2rem","fontFamily":"'DM Serif Display',serif",
-                                           "color":"#fff","lineHeight":"1"}),
-                        html.Div(l, style={"fontSize":"0.62rem","color":"rgba(255,255,255,0.55)",
-                                           "textTransform":"uppercase","letterSpacing":"0.1em","marginTop":"4px"}),
-                    ], style={"textAlign":"center","padding":"20px 32px",
-                              "borderRight":"1px solid rgba(255,255,255,0.18)" if i<3 else "none"})
-                    for i,(v,l) in enumerate([
-                        (rd['total'],"Total Servidores"),
-                        (rd['media_sal'],"Remuneração Média"),
-                        (f"{rd['media_idade']} anos","Idade Média"),
-                        (rd['contrib'],"Contribuição Total"),
+                        html.Div(l, style={"fontSize":"0.58rem","color":"rgba(255,255,255,0.50)",
+                                           "textTransform":"uppercase","letterSpacing":"0.1em",
+                                           "marginBottom":"6px"}),
+                        html.Div(v, style={"fontSize":"1.8rem","fontFamily":"'DM Serif Display',serif",
+                                           "color":"#fff","lineHeight":"1","whiteSpace":"nowrap"}),
+                    ], style={"textAlign":"center","padding":"18px 28px","flex":"1",
+                              "display":"flex","flexDirection":"column","justifyContent":"center","alignItems":"center",
+                              "borderRight":"1px solid rgba(255,255,255,0.18)" if i < 3 else "none"})
+                    for i, (v, l) in enumerate([
+                        (rd['total'], "Total Servidores"),
+                        (rd['media_sal'], "Remuneração Média"),
+                        (f"{rd['media_idade']} anos", "Idade Média"),
+                        (rd['contrib'], "Contribuição Total"),
                     ])]
-                ], style={"display":"flex","justifyContent":"center",
+                ], style={"display":"flex","justifyContent":"center","alignItems":"stretch",
                           "background":"rgba(255,255,255,0.08)",
                           "border":"1px solid rgba(255,255,255,0.15)","borderRadius":"12px"}),
                 html.Div([
@@ -462,40 +574,48 @@ def open_pdf_modal(n, rd):
             ]),
         ], className="report-cover"),
 
-        *[html.Div([
-            html.H3(titulo, style={
-                "fontFamily":"'DM Serif Display',serif","fontSize":"1.2rem","color":"#175414",
-                "margin":"0 0 12px","paddingBottom":"10px","borderBottom":"2px solid #c8ddc6"
+        # ═══ PÁGINA 2 — Composição + Perfil Demográfico ═══
+        html.Div([
+            rpt_hdr(),
+            sec_composicao,
+            sec_demografico,
+        ], className="report-section", style={"padding":"20px 40px","pageBreakBefore":"always"}),
+
+        # ═══ PÁGINA 3 — Gênero + Remuneração ═══
+        html.Div([
+            rpt_hdr(),
+            sec_genero,
+            sec_remuneracao,
+        ], className="report-section", style={"padding":"20px 40px","pageBreakBefore":"always"}),
+
+        # ═══ PÁGINA 4 — Contribuições + Tabela de Cargos ═══
+        html.Div([
+            rpt_hdr(),
+            sec_contribuicao,
+            html.H3("Detalhamento dos Principais Cargos", style={
+                "fontFamily":"'DM Serif Display',serif","fontSize":"1.15rem","color":"#175414",
+                "marginTop":"20px","marginBottom":"12px","paddingBottom":"8px",
+                "borderBottom":"2px solid #c8ddc6"
             }),
-            html.P(html.Span(texto), style={"margin":"0","lineHeight":"1.85","fontSize":"0.88rem","color":"#2d4a2b"})
-        ], style={
-            "background":"#f8fbf8","border":"1px solid #d4e6d2","borderLeft":"4px solid #175414",
-            "borderRadius":"10px","padding":"22px 26px","marginBottom":"16px"
-        }) for titulo, texto in analyses],
+            html.Table([
+                html.Thead(html.Tr([
+                    html.Th(c, style=_TH) for c in ['Cargo', 'Servidores', 'Rem. Média', 'Idade Média']
+                ])),
+                html.Tbody([
+                    html.Tr([
+                        html.Td(row.get('Cargo', ''),       style={**_TD, "textAlign":"left"}),
+                        html.Td(row.get('Servidores', ''),   style=_TD),
+                        html.Td(row.get('Rem. Média', ''),   style=_TD),
+                        html.Td(row.get('Idade Média', ''),  style=_TD),
+                    ], style={"background":"#fff" if i % 2 == 0 else "#f8fbf8",
+                              "borderBottom":"1px solid #d4e6d2"})
+                    for i, row in enumerate(rd.get('table', []))
+                ])
+            ], style={"width":"100%","borderCollapse":"collapse","border":"1px solid #c8ddc6",
+                      "overflow":"hidden"}),
+        ], className="report-section", style={"padding":"20px 40px","pageBreakBefore":"always"}),
 
-        html.H3("Detalhamento dos Principais Cargos", style={
-            "fontFamily":"'DM Serif Display',serif","fontSize":"1.2rem","color":"#175414",
-            "marginBottom":"14px","paddingBottom":"10px","borderBottom":"2px solid #c8ddc6","marginTop":"24px"
-        }),
-        html.Table([
-            html.Thead(html.Tr([
-                html.Th(c, style={
-                    "background":"#175414","color":"white","padding":"10px 14px",
-                    "fontSize":"0.65rem","textTransform":"uppercase","letterSpacing":"0.08em",
-                    "textAlign":"center","fontFamily":"Plus Jakarta Sans,sans-serif","fontWeight":"700"
-                }) for c in ['Cargo','Servidores','Rem. Média','Idade Média']
-            ])),
-            html.Tbody([
-                html.Tr([
-                    html.Td(row.get('Cargo',''),      style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"left"}),
-                    html.Td(row.get('Servidores',''), style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"center"}),
-                    html.Td(row.get('Rem. Média',''), style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"center"}),
-                    html.Td(row.get('Idade Média',''),style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"center"}),
-                ], style={"background":"#fff" if i%2==0 else "#f8fbf8","borderBottom":"1px solid #d4e6d2"})
-                for i,row in enumerate(rd.get('table',[]))
-            ])
-        ], style={"width":"100%","borderCollapse":"collapse","border":"1px solid #c8ddc6","overflow":"hidden"}),
-
+        # ═══ RODAPÉ ═══
         html.Div([
             html.Hr(style={"border":"none","borderTop":"1px solid #c8ddc6","margin":"28px 0 14px"}),
             html.Div([
@@ -504,7 +624,7 @@ def open_pdf_modal(n, rd):
                 html.Span(f"Gerado em {rd['update_date']} · Documento analítico e informativo.",
                           style={"fontSize":"0.68rem","color":"#9ab898"}),
             ], style={"display":"flex","justifyContent":"space-between","flexWrap":"wrap","gap":"8px"}),
-        ]),
+        ], style={"padding":"0 40px"}),
     ])
 
     modal = html.Div([
