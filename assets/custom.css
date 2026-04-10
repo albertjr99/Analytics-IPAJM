@@ -365,6 +365,9 @@ body {
     page-break-after: always;
 }
 
+/* Cabeçalho das páginas do relatório (tela — fica oculto) */
+.report-page-header { display: none; }
+
 @media print {
     /* Ocultar TODO o dashboard */
     .ipajm-header,
@@ -398,9 +401,27 @@ body {
         page-break-after: always;
     }
 
+    /* Cabeçalho: visível na impressão */
+    .report-page-header {
+        display: block !important;
+    }
+
+    /* Seções de conteúdo */
     .report-section {
-        padding: 0 40px;
+        padding: 20px 40px;
+        page-break-before: always;
+    }
+
+    /* Evitar corte de blocos de análise */
+    .report-section > div {
         page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    /* Tabelas: não cortar linhas */
+    table, tr, thead, tbody {
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     /* Garantir que cores de fundo apareçam */
@@ -414,9 +435,9 @@ body {
         size: A4;
     }
 
-    /* Página 2 em diante com margens normais */
-    .report-section {
-        margin: 0;
+    /* Margens internas das páginas de conteúdo */
+    @page :not(:first) {
+        margin: 10mm 0;
     }
 }
 
