@@ -421,15 +421,8 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════
-   FILTROS — SELECT NATIVO ESTILIZADO
+   FILTROS — DROPDOWN SLIM (estilo select nativo referência)
    ══════════════════════════════════════════════════════════ */
-
-/* Remove todo estilo Dash dropdown antigo da filter-bar */
-.filter-bar .dash-dropdown,
-.filter-bar .dash-dropdown-wrapper,
-.filter-bar .dash-dropdown-options {
-    display: none !important;
-}
 
 .sel-label {
     display: block;
@@ -438,55 +431,155 @@ body {
     letter-spacing: .1em;
     text-transform: uppercase;
     color: var(--tx-muted);
-    margin-bottom: 7px;
+    margin-bottom: 6px;
 }
 
-.sel-native {
-    display: block;
-    width: 100%;
-    min-height: 44px;
-    padding: 0 36px 0 14px;
-    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b8e69' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center;
-    border: 1.5px solid #9abf98;
-    border-radius: 8px;
-    color: #0f2e0d;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: .88rem;
-    font-weight: 500;
-    appearance: none;
-    -webkit-appearance: none;
-    cursor: pointer;
-    transition: border-color 180ms ease, box-shadow 180ms ease;
-    line-height: 44px;
+/* ── Wrapper (caixa visível) ─────────────────────────────── */
+.drop-select .Select-control,
+.drop-select .dash-dropdown-wrapper {
+    background: #ffffff !important;
+    border: 1px solid #b8d4b6 !important;
+    border-radius: 4px !important;
+    min-height: 34px !important;
+    height: 34px !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    transition: border-color 150ms ease, box-shadow 150ms ease !important;
+    display: flex !important;
+    align-items: center !important;
+}
+.drop-select .dash-dropdown-wrapper:hover,
+.drop-select .Select-control:hover {
+    border-color: var(--ipajm) !important;
+}
+.drop-select .dash-dropdown-wrapper:focus-within,
+.drop-select .Select--is-focused .Select-control {
+    border-color: var(--ipajm) !important;
+    box-shadow: 0 0 0 2px rgba(23,84,20,.12) !important;
+    outline: none !important;
 }
 
-.sel-native:hover {
-    border-color: var(--ipajm);
-    box-shadow: 0 0 0 3px rgba(23,84,20,.08);
+/* ── Texto do valor / placeholder ────────────────────────── */
+.drop-select .Select-value-label,
+.drop-select .Select-value,
+.drop-select .dash-dropdown-value {
+    color: #1a1a1a !important;
+    font-size: .84rem !important;
+    font-weight: 400 !important;
+    font-family: "Plus Jakarta Sans", sans-serif !important;
+    line-height: 32px !important;
+    padding: 0 10px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+.drop-select .Select-placeholder,
+.drop-select .dash-dropdown-placeholder {
+    color: #999 !important;
+    font-size: .84rem !important;
+    font-style: normal !important;
+    line-height: 32px !important;
+    padding: 0 10px !important;
 }
 
-.sel-native:focus {
-    outline: none;
-    border-color: var(--ipajm);
-    box-shadow: 0 0 0 3px rgba(23,84,20,.12);
+/* ── Seta chevron ────────────────────────────────────────── */
+.drop-select .Select-arrow-zone,
+.drop-select .dash-dropdown-trigger-icon {
+    color: #6b8e69 !important;
+    padding: 0 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+}
+/* Esconder ícone de busca no trigger */
+.drop-select .dash-dropdown-search-icon { display: none !important; }
+
+/* ── Input de busca embutido no trigger ──────────────────── */
+.drop-select .Select-input,
+.drop-select .Select-input input,
+.drop-select .dash-dropdown-search {
+    font-family: "Plus Jakarta Sans", sans-serif !important;
+    font-size: .84rem !important;
+    color: #1a1a1a !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    padding: 0 10px !important;
+    height: 32px !important;
+    line-height: 32px !important;
 }
 
-/* Opções do select nativo */
-.sel-native option {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: .88rem;
-    color: #2d4a2b;
-    background: #ffffff;
-    padding: 8px 14px;
+/* ── Grid interno do trigger (valor + ícone) ─────────────── */
+.drop-select .dash-dropdown-grid-container {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: 32px !important;
 }
 
-.sel-native option:checked,
-.sel-native option:hover {
-    background: #e8f5e6;
-    color: #175414;
+/* ── Ocultar X de clear ──────────────────────────────────── */
+.drop-select .Select-clear-zone,
+.drop-select .dash-dropdown-clear { display: none !important; }
+
+/* ── Menu de opções ──────────────────────────────────────── */
+.drop-select .Select-menu-outer,
+.drop-select .dash-dropdown-options,
+.drop-select .dash-dropdown-content {
+    background: #ffffff !important;
+    border: 1px solid #b8d4b6 !important;
+    border-top: none !important;
+    border-radius: 0 0 4px 4px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12) !important;
+    margin-top: 0 !important;
+    z-index: 9999 !important;
+    overflow: hidden !important;
+    max-height: 300px !important;
+    overflow-y: auto !important;
 }
 
-/* Valor selecionado "Todos" fica levemente acinzentado */
-.sel-native option[value="__all__"] {
-    color: #9ab898;
+/* ── Cada opção ──────────────────────────────────────────── */
+.drop-select .Select-option,
+.drop-select .dash-dropdown-option {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+    font-family: "Plus Jakarta Sans", sans-serif !important;
+    font-size: .84rem !important;
+    font-weight: 400 !important;
+    padding: 7px 12px !important;
+    cursor: pointer !important;
+    border-bottom: 1px solid #f2f2f2 !important;
+    transition: background 100ms ease !important;
+    line-height: 1.4 !important;
 }
+.drop-select .Select-option:last-child,
+.drop-select .dash-dropdown-option:last-child { border-bottom: none !important; }
+
+/* Hover */
+.drop-select .Select-option:hover,
+.drop-select .Select-option.is-focused,
+.drop-select .dash-dropdown-option:hover,
+.drop-select .dash-dropdown-option[data-focused=true] {
+    background: #e8f5e6 !important;
+    color: #175414 !important;
+}
+
+/* Selecionado — destaque igual à referência */
+.drop-select .Select-option.is-selected,
+.drop-select .dash-dropdown-option[aria-selected=true] {
+    background: #175414 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* ── Scrollbar do menu ───────────────────────────────────── */
+.drop-select .Select-menu-outer::-webkit-scrollbar,
+.drop-select .dash-dropdown-options::-webkit-scrollbar { width: 4px; }
+.drop-select .Select-menu-outer::-webkit-scrollbar-thumb,
+.drop-select .dash-dropdown-options::-webkit-scrollbar-thumb {
+    background: #b0ccae; border-radius: 2px;
+}
+
+/* ── Filter-bar padding menor para combinar com o slim ───── */
+.filter-bar { padding: 16px 24px; align-items: flex-end; }
+.filter-group { flex: 1; min-width: 180px; }
