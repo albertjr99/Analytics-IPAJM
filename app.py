@@ -1,6 +1,6 @@
 """
 IPAJM Analytics Institucional — app.py
-Dark Luxury Theme | DM Sans + DM Serif Display
+Green Institutional Theme | Plus Jakarta Sans + DM Serif Display
 """
 
 import dash
@@ -22,27 +22,28 @@ app = dash.Dash(
     title="IPAJM · Analytics Institucional",
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}]
 )
-server = app.server
+
 df = pd.read_parquet(os.path.join(BASE_PATH, 'data_processed.parquet'))
 UPDATE_DATE = date.today().strftime("%d/%m/%Y")
 
-# ── Plotly Template ───────────────────────────────────────────
-PLOTLY_TEMPLATE = dict(
-    layout=go.Layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Plus Jakarta Sans, sans-serif", color="#6b8e69", size=11),
-        colorway=["#175414","#2a8a24","#3db836","#72d96a","#b5e4b2","#c8a84b"],
-        xaxis=dict(showgrid=False, zeroline=False, showline=False,
-                   tickcolor="#9ab898", tickfont=dict(size=10, color="#6b8e69")),
-        yaxis=dict(showgrid=True, gridcolor="rgba(180,210,178,.35)", zeroline=False,
-                   showline=False, tickcolor="#9ab898", tickfont=dict(size=10, color="#6b8e69")),
-        margin=dict(t=10, b=10, l=10, r=10),
-        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#6b8e69")),
-        hoverlabel=dict(bgcolor="#ffffff", bordercolor="#b0ccae",
-                        font=dict(color="#0f2e0d", family="Plus Jakarta Sans, sans-serif"))
-    )
+# Lista de todos os órgãos (77) ordenados, sem 'nan'
+ALL_ORGAOS = sorted([o for o in df['NO_ORGAO'].dropna().unique() if str(o) != 'nan'])
+
+# ── Plotly base layout (sem legend — aplicamos por figura) ────
+BASE_LAYOUT = dict(
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(family="Plus Jakarta Sans, sans-serif", color="#6b8e69", size=11),
+    colorway=["#175414","#2a8a24","#3db836","#72d96a","#b5e4b2","#c8a84b"],
+    xaxis=dict(showgrid=False, zeroline=False, showline=False,
+               tickcolor="#9ab898", tickfont=dict(size=10, color="#6b8e69")),
+    yaxis=dict(showgrid=True, gridcolor="rgba(180,210,178,.35)", zeroline=False,
+               showline=False, tickcolor="#9ab898", tickfont=dict(size=10, color="#6b8e69")),
+    margin=dict(t=10, b=10, l=10, r=10),
+    hoverlabel=dict(bgcolor="#ffffff", bordercolor="#b0ccae",
+                    font=dict(color="#0f2e0d", family="Plus Jakarta Sans, sans-serif"))
 )
+LEGEND_BASE = dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#6b8e69"))
 
 # ── Helpers ───────────────────────────────────────────────────
 def fmt_brl(v):
@@ -67,15 +68,25 @@ def chart_card(title, gid):
         dcc.Graph(id=gid, config={"displayModeBar": False, "responsive": True}, style={"height":"320px"})
     ], className="chart-card h-100")
 
+# ── Dropdown estilo "select" simples ─────────────────────────
+DROP_STYLE = {
+    "fontFamily": "Plus Jakarta Sans, sans-serif",
+    "fontSize": "0.88rem",
+    "minWidth": "180px",
+}
+
 # ── Layout ────────────────────────────────────────────────────
 app.layout = html.Div([
     html.Header([
         html.Div(html.Img(src='/assets/logo-ipajm.png', alt='IPAJM'), className="header-logo-wrap"),
         html.Div([
-            html.Div([html.Div(className="header-dot"),
-                      html.Span("SISTEMA AO VIVO", className="header-pill-text")], className="header-pill"),
-            html.Span(f"Atualizado em {UPDATE_DATE}", className="header-date-pill"),
-            html.Button([html.Span("↓ "), html.Span("Exportar PDF")],
+            html.Div([
+                html.Img(src='/assets/Brasao_Governo.png', alt='Governo do ES',
+                         style={"height":"56px","width":"auto",
+                                "filter":"brightness(0) invert(1)","opacity":"0.88"}),
+                html.Span(f"Atualizado em {UPDATE_DATE}", className="header-date-pill"),
+            ], style={"display":"flex","alignItems":"center","gap":"14px"}),
+            html.Button([html.Span("↓ "), html.Span("Exportar Relatório")],
                         id="btn-export-pdf", className="btn-export-pdf", n_clicks=0),
         ], className="header-right")
     ], className="ipajm-header"),
@@ -83,38 +94,52 @@ app.layout = html.Div([
     html.Div([
         html.Div("Filtros de Análise", className="section-label"),
         html.Div([
-            # Categoria
+            # ── Categoria
             html.Div([
                 html.Label("Categoria", className="sel-label"),
                 dcc.Dropdown(
-    id='filter-category',
-    options=[{"label": "Todas as categorias", "value": "__all__"}] +
-            [{"label": i, "value": i} for i in sorted(df['CATEGORIA'].unique())],
-    value="__all__",
-    clearable=False,
-                    ),
+                    id='filter-category',
+                    options=[{"label": "Todas as categorias", "value": "__all__"}] +
+                            [{"label": i, "value": i} for i in sorted(df['CATEGORIA'].unique())],
+                    value="__all__",
+                    clearable=False,
+                    searchable=False,
+                    className="drop-select",
+                    style=DROP_STYLE,
+                )
             ], className="filter-group", style={"flex":"1"}),
-            # Sexo
+
+            # ── Sexo
             html.Div([
                 html.Label("Sexo", className="sel-label"),
                 dcc.Dropdown(
-    id='filter-sex',
-    options=[{"label": "Todos", "value": "__all__"}] +
-            [{"label": i, "value": i} for i in sorted([s for s in df['SEXO_DESC'].unique() if s != 'Não Informado']) + ['Não Informado']],
-    value="__all__",
-    clearable=False,
-                    ),
+                    id='filter-sex',
+                    options=[{"label": "Todos", "value": "__all__"}] +
+                            [{"label": i, "value": i} for i in
+                             sorted([s for s in df['SEXO_DESC'].unique() if s != 'Não Informado']) + ['Não Informado']],
+                    value="__all__",
+                    clearable=False,
+                    searchable=False,
+                    className="drop-select",
+                    style=DROP_STYLE,
+                )
             ], className="filter-group", style={"flex":"1"}),
-            # Órgão — todos os 77
+
+            # ── Órgão — todos os 77
             html.Div([
                 html.Label("Órgão", className="sel-label"),
                 dcc.Dropdown(
-    id='filter-orgao',
-    options=[{"label": "Todos os órgãos", "value": "__all__"}] +
-            [{"label": i, "value": i} for i in sorted([o for o in df['NO_ORGAO'].dropna().unique() if o != 'nan'])],
-    value="__all__",
-    clearable=False,
-  ),
+                    id='filter-orgao',
+                    options=[{"label": "Todos os órgãos", "value": "__all__"}] +
+                            [{"label": i, "value": i} for i in ALL_ORGAOS],
+                    value="__all__",
+                    clearable=False,
+                    searchable=True,
+                    className="drop-select",
+                    style=DROP_STYLE,
+                    placeholder="Todos os órgãos",
+                    optionHeight=36,
+                )
             ], className="filter-group", style={"flex":"1.5"}),
         ], className="filter-bar"),
 
@@ -170,15 +195,15 @@ app.layout = html.Div([
      Input('filter-orgao','value')]
 )
 def update_dashboard(categories, sexes, orgaos):
-    # Native <select> returns a single string
+    # Dropdowns retornam string única (não-multi)
     cat_filter = None if (not categories or categories == "__all__") else [categories]
-    sex_filter = None if (not sexes or sexes == "__all__") else [sexes]
-    org_filter = None if (not orgaos or orgaos == "__all__") else [orgaos]
+    sex_filter = None if (not sexes      or sexes      == "__all__") else [sexes]
+    org_filter = None if (not orgaos     or orgaos     == "__all__") else [orgaos]
 
-    dff = df[df["CATEGORIA"].isin(cat_filter or df["CATEGORIA"].unique())]
-    dff = dff[dff["SEXO_DESC"].isin(sex_filter or df["SEXO_DESC"].unique())]
+    dff = df[df['CATEGORIA'].isin(cat_filter or df['CATEGORIA'].unique())]
+    dff = dff[dff['SEXO_DESC'].isin(sex_filter or df['SEXO_DESC'].unique())]
     if org_filter:
-        dff = dff[dff["NO_ORGAO"].isin(org_filter)]
+        dff = dff[dff['NO_ORGAO'].isin(org_filter)]
 
     total       = len(dff)
     media_sal   = dff['VL_REMUNERACAO'].mean()
@@ -193,17 +218,19 @@ def update_dashboard(categories, sexes, orgaos):
     ]
 
     greens = ["#175414","#1e6e19","#2a8a24","#3db836","#72d96a","#b5e4b2","#e8f5e6"]
-    tpl = PLOTLY_TEMPLATE['layout'].to_plotly_json()
 
-    # 1 — Donut Categoria
+    # ── 1 Donut Categoria
     cc = dff['CATEGORIA'].value_counts().reset_index()
-    fig_cat = go.Figure(go.Pie(labels=cc['CATEGORIA'], values=cc['count'], hole=0.6,
-        textinfo='percent', marker=dict(colors=greens, line=dict(color="#ffffff", width=2)),
-        hovertemplate="<b>%{label}</b><br>%{value:,} servidores<extra></extra>"))
-    tpl['legend']['orientation'] = "v"
-    fig_cat.update_layout(**tpl, showlegend=True)
+    fig_cat = go.Figure(go.Pie(
+        labels=cc['CATEGORIA'], values=cc['count'], hole=0.6, textinfo='percent',
+        marker=dict(colors=greens, line=dict(color="#ffffff", width=2)),
+        hovertemplate="<b>%{label}</b><br>%{value:,} servidores<extra></extra>"
+    ))
+    fig_cat.update_layout(**BASE_LAYOUT,
+                          showlegend=True,
+                          legend=dict(**LEGEND_BASE, orientation="v"))
 
-    # 2 — Faixa etária
+    # ── 2 Faixa Etária
     age_order = ['<18','18-25','26-35','36-45','46-55','56-65','66-75','>75']
     ac = dff['FAIXA_ETARIA'].value_counts().reindex(age_order).fillna(0).reset_index()
     ac['txt'] = ac['count'].apply(lambda x: fmt_int(int(x)))
@@ -213,12 +240,14 @@ def update_dashboard(categories, sexes, orgaos):
         marker=dict(color=ac['count'], colorscale=[[0,"#b5e4b2"],[0.5,"#2a8a24"],[1,"#175414"]], line=dict(width=0)),
         hovertemplate="<b>%{y}</b><br>%{x:,} servidores<extra></extra>"
     ))
-    fig_age.update_layout(**tpl)
-    fig_age.update_layout(yaxis=dict(showgrid=False),
-                          xaxis=dict(showgrid=True, gridcolor="rgba(180,210,178,.35)", tickformat=","))
+    fig_age.update_layout(**BASE_LAYOUT)
+    fig_age.update_layout(
+        yaxis=dict(showgrid=False),
+        xaxis=dict(showgrid=True, gridcolor="rgba(180,210,178,.35)", tickformat=",")
+    )
     fig_age.update_traces(width=0.65)
 
-    # 3 — Salário por órgão
+    # ── 3 Salário por Órgão
     so = dff.groupby('NO_ORGAO')['VL_REMUNERACAO'].mean().sort_values(ascending=True).tail(10).reset_index()
     so['txt'] = so['VL_REMUNERACAO'].apply(fmt_brl)
     fig_sal = go.Figure(go.Bar(
@@ -227,19 +256,25 @@ def update_dashboard(categories, sexes, orgaos):
         marker=dict(color=so['VL_REMUNERACAO'], colorscale=[[0,"#b5e4b2"],[1,"#175414"]], line=dict(width=0)),
         hovertemplate="<b>%{y}</b><br>%{x:,.2f}<extra></extra>"
     ))
-    fig_sal.update_layout(**tpl)
-    fig_sal.update_layout(yaxis=dict(showgrid=False), xaxis=dict(showgrid=True, gridcolor="rgba(180,210,178,.35)"))
+    fig_sal.update_layout(**BASE_LAYOUT)
+    fig_sal.update_layout(yaxis=dict(showgrid=False),
+                          xaxis=dict(showgrid=True, gridcolor="rgba(180,210,178,.35)"))
 
-    # 4 — Sexo donut
+    # ── 4 Sexo donut
     sc = dff['SEXO_DESC'].value_counts().reset_index()
-    fig_sex = go.Figure(go.Pie(labels=sc['SEXO_DESC'], values=sc['count'], hole=0.6,
-        textinfo='percent', marker=dict(colors=greens, line=dict(color="#ffffff", width=2)),
-        hovertemplate="<b>%{label}</b><br>%{value:,}<extra></extra>"))
-    fig_sex.update_layout(**tpl)
+    fig_sex = go.Figure(go.Pie(
+        labels=sc['SEXO_DESC'], values=sc['count'], hole=0.6, textinfo='percent',
+        marker=dict(colors=greens, line=dict(color="#ffffff", width=2)),
+        hovertemplate="<b>%{label}</b><br>%{value:,}<extra></extra>"
+    ))
+    fig_sex.update_layout(**BASE_LAYOUT,
+                          showlegend=True,
+                          legend=dict(**LEGEND_BASE, orientation="v"))
 
-    # 5 — Top cargos (apenas ativos)
+    # ── 5 Top Cargos (apenas Ativos)
     ativos_df = dff[dff['CATEGORIA']=='ATIVOS']
-    tc = ativos_df.groupby('NO_CARGO')['VL_REMUNERACAO'].mean().sort_values(ascending=True).tail(10).reset_index()
+    tc = (ativos_df.groupby('NO_CARGO')['VL_REMUNERACAO']
+          .mean().sort_values(ascending=True).tail(10).reset_index())
     tc['lbl'] = tc['NO_CARGO'].apply(lambda x: str(x)[:35]+"…" if len(str(x))>35 else str(x))
     tc['txt'] = tc['VL_REMUNERACAO'].apply(fmt_brl)
     fig_tc = go.Figure(go.Bar(
@@ -248,10 +283,10 @@ def update_dashboard(categories, sexes, orgaos):
         marker=dict(color="#1e6e19", opacity=0.85, line=dict(width=0)),
         hovertemplate="<b>%{y}</b><br>%{x:,.2f}<extra></extra>"
     ))
-    fig_tc.update_layout(**tpl)
+    fig_tc.update_layout(**BASE_LAYOUT)
     fig_tc.update_layout(yaxis=dict(showgrid=False))
 
-    # 6 — Remuneração média por categoria (substituindo contribuição total, mais útil)
+    # ── 6 Remuneração Média por Categoria
     rm_cat = dff.groupby('CATEGORIA')['VL_REMUNERACAO'].mean().reset_index()
     rm_cat['txt'] = rm_cat['VL_REMUNERACAO'].apply(fmt_brl)
     fig_contrib = go.Figure(go.Bar(
@@ -261,13 +296,12 @@ def update_dashboard(categories, sexes, orgaos):
                     colorscale=[[0,"#b5e4b2"],[1,"#175414"]], line=dict(width=0)),
         hovertemplate="<b>%{x}</b><br>R$ %{y:,.2f}<extra></extra>"
     ))
-    fig_contrib.update_layout(**tpl)
+    fig_contrib.update_layout(**BASE_LAYOUT)
     fig_contrib.update_traces(width=0.4)
 
-    # Tabela
+    # ── Tabela
     tdf = (dff.groupby('NO_CARGO')
-              .agg(Servidores=('ID_SERVIDOR_MATRICULA','count') if 'ID_SERVIDOR_MATRICULA' in dff.columns
-                   else ('NO_CARGO','count'),
+              .agg(Servidores=('VL_REMUNERACAO','count'),
                    Rem_Media=('VL_REMUNERACAO','mean'),
                    Idade_Media=('IDADE','mean'))
               .reset_index()
@@ -327,25 +361,24 @@ def open_pdf_modal(n, rd):
     if not n or not rd:
         return []
 
-    # ── Análises automáticas
-    cats     = rd.get('categorias', {})
+    cats      = rd.get('categorias', {})
     cat_lines = " | ".join([f"{k}: {fmt_int(v)}" for k, v in cats.items()])
 
     dist_sexo = {r['label']: r['value'] for r in rd.get('dist_sexo', [])}
-    fem   = dist_sexo.get('Feminino', 0)
-    masc  = dist_sexo.get('Masculino', 0)
-    total_sx = fem + masc
-    pct_fem  = (fem/total_sx*100) if total_sx else 0
-    pct_masc = (masc/total_sx*100) if total_sx else 0
+    fem       = dist_sexo.get('Feminino', 0)
+    masc      = dist_sexo.get('Masculino', 0)
+    total_sx  = fem + masc
+    pct_fem   = (fem/total_sx*100) if total_sx else 0
+    pct_masc  = (masc/total_sx*100) if total_sx else 0
 
-    fe_data = {r['FAIXA_ETARIA']: int(r['count']) for r in rd.get('faixa_etaria', [])}
+    fe_data    = {r['FAIXA_ETARIA']: int(r['count']) for r in rd.get('faixa_etaria', [])}
     peak_faixa = max(fe_data, key=fe_data.get) if fe_data else "N/D"
     peak_count = fmt_int(fe_data.get(peak_faixa, 0))
 
     tc_top = rd['top_cargos'][0] if rd.get('top_cargos') else {}
     to_top = rd['top_orgaos'][-1] if rd.get('top_orgaos') else {}
 
-    cc_data = {r['CATEGORIA']: r['VL_REMUNERACAO'] for r in rd.get('rem_cat', [])}
+    cc_data       = {r['CATEGORIA']: r['VL_REMUNERACAO'] for r in rd.get('rem_cat', [])}
     maior_rem_cat = max(cc_data, key=cc_data.get) if cc_data else "N/D"
 
     analyses = [
@@ -385,9 +418,7 @@ def open_pdf_modal(n, rd):
          f"financeiro de longo prazo do RPPS estadual."),
     ]
 
-    # ── Conteúdo de impressão
     print_content = html.Div(id="print-report-content", children=[
-        # CAPA
         html.Div([
             html.Div(style={"height":"60px"}),
             html.Div([
@@ -402,7 +433,6 @@ def open_pdf_modal(n, rd):
                     "fontFamily":"'DM Serif Display',serif","fontSize":"1.35rem",
                     "color":"rgba(255,255,255,0.75)","textAlign":"center","fontWeight":"normal","margin":"0 0 40px"
                 }),
-                # KPI bar na capa
                 html.Div([
                     *[html.Div([
                         html.Div(v, style={"fontSize":"2rem","fontFamily":"'DM Serif Display',serif",
@@ -430,7 +460,6 @@ def open_pdf_modal(n, rd):
             ]),
         ], className="report-cover"),
 
-        # ANÁLISES
         *[html.Div([
             html.H3(titulo, style={
                 "fontFamily":"'DM Serif Display',serif","fontSize":"1.2rem","color":"#175414",
@@ -442,7 +471,6 @@ def open_pdf_modal(n, rd):
             "borderRadius":"10px","padding":"22px 26px","marginBottom":"16px"
         }) for titulo, texto in analyses],
 
-        # TABELA
         html.H3("Detalhamento dos Principais Cargos", style={
             "fontFamily":"'DM Serif Display',serif","fontSize":"1.2rem","color":"#175414",
             "marginBottom":"14px","paddingBottom":"10px","borderBottom":"2px solid #c8ddc6","marginTop":"24px"
@@ -457,16 +485,15 @@ def open_pdf_modal(n, rd):
             ])),
             html.Tbody([
                 html.Tr([
-                    html.Td(row.get('Cargo',''),       style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"left"}),
-                    html.Td(row.get('Servidores',''),   style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"center"}),
-                    html.Td(row.get('Rem. Média',''),   style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"center"}),
-                    html.Td(row.get('Idade Média',''),  style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"center"}),
+                    html.Td(row.get('Cargo',''),      style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"left"}),
+                    html.Td(row.get('Servidores',''), style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"center"}),
+                    html.Td(row.get('Rem. Média',''), style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"center"}),
+                    html.Td(row.get('Idade Média',''),style={"padding":"8px 14px","fontSize":"0.8rem","color":"#2d4a2b","textAlign":"center"}),
                 ], style={"background":"#fff" if i%2==0 else "#f8fbf8","borderBottom":"1px solid #d4e6d2"})
                 for i,row in enumerate(rd.get('table',[]))
             ])
         ], style={"width":"100%","borderCollapse":"collapse","border":"1px solid #c8ddc6","overflow":"hidden"}),
 
-        # RODAPÉ
         html.Div([
             html.Hr(style={"border":"none","borderTop":"1px solid #c8ddc6","margin":"28px 0 14px"}),
             html.Div([
@@ -479,7 +506,6 @@ def open_pdf_modal(n, rd):
     ])
 
     modal = html.Div([
-        # Overlay com modal de confirmação
         html.Div(id='pdf-overlay', style={
             "position":"fixed","top":0,"left":0,"width":"100vw","height":"100vh",
             "backgroundColor":"rgba(0,0,0,0.62)","zIndex":9000,
@@ -488,7 +514,7 @@ def open_pdf_modal(n, rd):
             html.Div([
                 html.Div([
                     html.Div([
-                        html.Img(src='/assets/logo-ipajm.png', style={"height":"32px","filter":"invert(25%) sepia(60%) saturate(700%) hue-rotate(100deg)"}),
+                        html.Img(src='/assets/logo-ipajm.png', style={"height":"28px","filter":"invert(25%) sepia(60%) saturate(700%) hue-rotate(100deg)"}),
                         html.Span("Exportar Relatório PDF", style={"fontWeight":"700","fontSize":"1rem","color":"#0f2e0d","marginLeft":"10px"}),
                     ], style={"display":"flex","alignItems":"center"}),
                     html.Button("✕", id="btn-close-pdf-modal", style={
@@ -510,7 +536,6 @@ def open_pdf_modal(n, rd):
                             "width":"100%","padding":"13px","background":"#175414","color":"white",
                             "border":"none","borderRadius":"8px","fontWeight":"700","fontSize":"0.92rem",
                             "cursor":"pointer","fontFamily":"Plus Jakarta Sans,sans-serif",
-                            "transition":"background 0.2s"
                         }),
                 ]),
             ], style={
@@ -525,7 +550,7 @@ def open_pdf_modal(n, rd):
     return modal
 
 
-# ── Clientside: imprimir e fechar modal ───────────────────────
+# ── Clientside callbacks ──────────────────────────────────────
 app.clientside_callback(
     """
     function(n) {
