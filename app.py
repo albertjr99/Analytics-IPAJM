@@ -23,6 +23,8 @@ app = dash.Dash(
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}]
 )
 
+server = app.server
+
 df = pd.read_parquet(os.path.join(BASE_PATH, 'data_processed.parquet'))
 UPDATE_DATE = date.today().strftime("%d/%m/%Y")
 
