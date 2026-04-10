@@ -92,8 +92,7 @@ app.layout = html.Div([
             [{"label": i, "value": i} for i in sorted(df['CATEGORIA'].unique())],
     value="__all__",
     clearable=False,
-    className="sel-native"
-                ),
+                    ),
             ], className="filter-group", style={"flex":"1"}),
             # Sexo
             html.Div([
@@ -104,8 +103,7 @@ app.layout = html.Div([
             [{"label": i, "value": i} for i in sorted([s for s in df['SEXO_DESC'].unique() if s != 'Não Informado']) + ['Não Informado']],
     value="__all__",
     clearable=False,
-    className="sel-native"
-                ),
+                    ),
             ], className="filter-group", style={"flex":"1"}),
             # Órgão — todos os 77
             html.Div([
@@ -116,8 +114,7 @@ app.layout = html.Div([
             [{"label": i, "value": i} for i in sorted([o for o in df['NO_ORGAO'].dropna().unique() if o != 'nan'])],
     value="__all__",
     clearable=False,
-    className="sel-native"
-),
+  ),
             ], className="filter-group", style={"flex":"1.5"}),
         ], className="filter-bar"),
 
