@@ -88,6 +88,7 @@ app.layout = html.Div([
                 html.Label("Categoria", className="sel-label"),
                 html.Select(
                     id='filter-category',
+                    value="__all__",
                     children=[html.Option("Todas as categorias", value="__all__")] +
                              [html.Option(i, value=i) for i in sorted(df['CATEGORIA'].unique())],
                     className="sel-native",
@@ -99,6 +100,7 @@ app.layout = html.Div([
                 html.Label("Sexo", className="sel-label"),
                 html.Select(
                     id='filter-sex',
+                    value="__all__",
                     children=[html.Option("Todos", value="__all__")] +
                              [html.Option(i, value=i) for i in sorted([s for s in df['SEXO_DESC'].unique() if s != 'Não Informado']) + ['Não Informado']],
                     className="sel-native",
@@ -109,6 +111,7 @@ app.layout = html.Div([
                 html.Label("Órgão", className="sel-label"),
                 html.Select(
                     id='filter-orgao',
+                    value="__all__",
                     children=[html.Option("Todos os órgãos", value="__all__")] +
                              [html.Option(i, value=i) for i in sorted([o for o in df['NO_ORGAO'].dropna().unique() if o != 'nan'])],
                     className="sel-native",
