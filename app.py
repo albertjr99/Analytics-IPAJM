@@ -59,18 +59,7 @@ else:
 for col in ["VL_REMUNERACAO", "VL_CONTRIBUICAO", "VL_BASE_CALCULO", "VL_BENEF_PENSAO", "VL_APOSENTADORIA_NUM"]:
     if col in df.columns:
         df[col] = df[col].fillna(0)
-def normalize_text(value):
-    import unicodedata
-    if value is None:
-        return ""
-    value = str(value)
-    value = unicodedata.normalize('NFKD', value).encode('ASCII', 'ignore').decode('ASCII')
-    return value.strip().upper()
 
-# 🔥 COLUNAS NORMALIZADAS (feito uma vez só)
-df["CATEGORIA_NORM"] = df["CATEGORIA"].apply(normalize_text)
-df["SEXO_NORM"] = df["SEXO_DESC"].apply(normalize_text)
-df["ORGAO_NORM"] = df["NO_ORGAO"].apply(normalize_text)
 
 def compute_age_from_birthdate(series, reference_date=None):
     ref = pd.Timestamp(reference_date or date.today()).normalize()
@@ -386,20 +375,16 @@ def data_table_from_df(table_df, left_cols=None):
 
 def filter_main_df(regime="__all__", category="__all__", sex="__all__", orgao="__all__"):
     dff = df.copy()
-
     if regime and regime != "__all__":
         dff = dff[dff["REGIME_PREVIDENCIARIO"] == regime]
-
     if category and category != "__all__":
-        dff = dff[dff["CATEGORIA_NORM"] == normalize_text(category)]
-
+        dff = dff[dff["CATEGORIA"] == category]
     if sex and sex != "__all__":
-        dff = dff[dff["SEXO_NORM"] == normalize_text(sex)]
-
+        dff = dff[dff["SEXO_DESC"] == sex]
     if orgao and orgao != "__all__":
-        dff = dff[dff["ORGAO_NORM"] == normalize_text(orgao)]
-
+        dff = dff[dff["NO_ORGAO"] == orgao]
     return dff
+
 
 # ──────────────────────────────────────────────────────────────
 # Layout
@@ -786,10 +771,7 @@ def update_report_store(regime):
         "rec_pct": f"{rec_pct:.1f}%",
         "update_date": UPDATE_DATE,
     }
-    
-if dff.empty:
-    print("⚠️ DF FILTRADO VAZIO")
-    return [dash.no_update] * 9  # ajuste conforme nº de outputs
+
 
 # ──────────────────────────────────────────────────────────────
 # Nossa Gente
