@@ -1553,7 +1553,7 @@ def open_pdf_modal(n_clicks, rd, active_tab, regime):
         faixa_base = dff["FAIXA_ETARIA_EXEC"].replace("Não informado", np.nan)
         faixa_top = safe_mode(faixa_base, "Faixa não identificada")
         orgao_top = safe_mode(dff["NO_ORGAO"], "Órgão não identificado")
-        sexo_norm = dff["SEXO_DESC"].fillna("").astype(str).str.strip().str.upper()
+        sexo_norm = dff["SEXO_DESC"].astype(str).replace("nan", "").str.strip().str.upper()
         pct_mulheres = safe_float(sexo_norm.isin(["FEMININO", "MULHER", "F"]).mean() * 100) if len(dff) else 0
         _, fig_cat, fig_age, fig_sal, fig_sex, fig_tc, fig_contrib, table_component = update_gente("__all__", "__all__", "__all__", regime)
 
