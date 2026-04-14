@@ -35,9 +35,9 @@ server = app.server
 # ──────────────────────────────────────────────────────────────
 # Data loading / normalization
 # ──────────────────────────────────────────────────────────────
-df = pd.read_parquet(os.path.join(BASE_PATH, "data_processed.parquet")).copy()
+df = pd.read_parquet(os.path.join(BASE_PATH, "data_processed.parquet"))
 recad_path = os.path.join(BASE_PATH, "data_recadastramento.parquet")
-df_recad = pd.read_parquet(recad_path).copy() if os.path.exists(recad_path) else pd.DataFrame()
+df_recad = pd.read_parquet(recad_path) if os.path.exists(recad_path) else pd.DataFrame()
 
 for col in [
     "VL_REMUNERACAO",
@@ -179,6 +179,25 @@ ALL_SEXES = sorted([s for s in df["SEXO_DESC"].dropna().unique() if str(s) not i
 if "Não Informado" in set(df["SEXO_DESC"].dropna().unique()):
     ALL_SEXES.append("Não Informado")
 
+# ── Memory optimization: drop raw columns no longer needed after processing ──
+_drop_main = [c for c in [
+    "DT_NASC_SERVIDOR", "DT_NASC_APOSENTADO", "DT_NASC_PENSIONISTA",
+    "SEXO_CONSOLIDADO", "IDADE_CONSOLIDADA",
+    "CO_SEXO_SERVIDOR", "CO_SEXO_APOSENTADO", "CO_SEXO_PENSIONISTA",
+    "CODIGO_SEXO_PENSIONISTA", "CO_SEXO_INSTITUIDOR",
+    "CO_COMP_MASSA", "CO_TIPO_APOSENTADORIA",
+    "NO_CARREIRA", "FAIXA_ETARIA",
+    "VL_REMUNERACAO", "VL_BENEF_PENSAO", "VL_APOSENTADORIA_NUM", "VL_APOSENTADORIA",
+] if c in df.columns]
+if _drop_main:
+    df.drop(columns=_drop_main, inplace=True)
+
+# Convert high-cardinality object columns to category to reduce memory footprint
+for _col in ["NO_ORGAO", "NO_CARGO", "CATEGORIA", "SEXO_DESC",
+             "REGIME_PREVIDENCIARIO", "TIPO_DIREITO", "FAIXA_ETARIA_EXEC"]:
+    if _col in df.columns:
+        df[_col] = df[_col].astype("category")
+
 if not df_recad.empty:
     for col in ["IDADE"]:
         if col in df_recad.columns:
@@ -214,6 +233,20 @@ if not df_recad.empty:
         ["Digital / Gov.br", "Presencial / Sisprev"],
         default="Outros / Pendente",
     )
+
+    # Drop intermediate columns no longer needed
+    _drop_recad = [c for c in [
+        "RECAD_ORGAO_NORM", "RECAD_CARGO_NORM", "FAIXA_ETARIA_RECAD",
+    ] if c in df_recad.columns]
+    if _drop_recad:
+        df_recad.drop(columns=_drop_recad, inplace=True)
+
+    # Convert to category for memory savings
+    for _col in ["STATUS_RECAD", "MODALIDADE_GRUPO", "RECAD_REGIME_INFERIDO",
+                 "RECAD_CAT_SIMPLES", "RECAD_ORGAO", "SEXO_DESC",
+                 "FAIXA_ETARIA_EXEC", "MES_ANIV_DESC"]:
+        if _col in df_recad.columns:
+            df_recad[_col] = df_recad[_col].astype("category")
 
 
 # ──────────────────────────────────────────────────────────────
@@ -374,16 +407,21 @@ def data_table_from_df(table_df, left_cols=None):
 
 
 def filter_main_df(regime="__all__", category="__all__", sex="__all__", orgao="__all__"):
-    dff = df.copy()
+    conditions = []
     if regime and regime != "__all__":
-        dff = dff[dff["REGIME_PREVIDENCIARIO"] == regime]
+        conditions.append(df["REGIME_PREVIDENCIARIO"] == regime)
     if category and category != "__all__":
-        dff = dff[dff["CATEGORIA"] == category]
+        conditions.append(df["CATEGORIA"] == category)
     if sex and sex != "__all__":
-        dff = dff[dff["SEXO_DESC"] == sex]
+        conditions.append(df["SEXO_DESC"] == sex)
     if orgao and orgao != "__all__":
-        dff = dff[dff["NO_ORGAO"] == orgao]
-    return dff
+        conditions.append(df["NO_ORGAO"] == orgao)
+    if not conditions:
+        return df  # return reference, not a copy — callbacks only read from dff
+    mask = conditions[0]
+    for cond in conditions[1:]:
+        mask = mask & cond
+    return df.loc[mask]
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1237,9 +1275,10 @@ def update_recad(tab, regime):
     if tab != "tab-recad" or df_recad.empty:
         return [], empty, empty, empty, empty, empty, empty, empty, html.Div()
 
-    rdf = df_recad.copy()
     if regime != "__all__":
-        rdf = rdf[rdf["RECAD_REGIME_INFERIDO"] == regime]
+        rdf = df_recad[df_recad["RECAD_REGIME_INFERIDO"] == regime]
+    else:
+        rdf = df_recad
 
     if rdf.empty:
         return [], empty, empty, empty, empty, empty, empty, empty, data_table_from_df(pd.DataFrame())
@@ -1657,9 +1696,10 @@ def open_pdf_modal(n_clicks, rd, active_tab, regime):
         appendix = table_block("Órgãos com maior estoque e despesa", table_component)
 
     else:
-        rdf = df_recad.copy()
         if regime != "__all__":
-            rdf = rdf[rdf["RECAD_REGIME_INFERIDO"] == regime]
+            rdf = df_recad[df_recad["RECAD_REGIME_INFERIDO"] == regime]
+        else:
+            rdf = df_recad
 
         total = len(rdf)
         rec_ok = len(rdf[rdf["STATUS_RECAD"] == "RECADASTRADO"])
