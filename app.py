@@ -1374,7 +1374,9 @@ def update_recad(tab, regime):
         mes_order = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
         mes = rdf.groupby(["MES_ANIV_DESC", "STATUS_RECAD"]).size().reset_index(name="count")
         for idx, status_name in enumerate(["RECADASTRADO", "NÃO RECADASTRADO"]):
-            sub = mes[mes["STATUS_RECAD"] == status_name].set_index("MES_ANIV_DESC").reindex(mes_order).fillna(0).reset_index()
+            sub = mes[mes["STATUS_RECAD"] == status_name].set_index("MES_ANIV_DESC").reindex(mes_order)
+            sub["count"] = sub["count"].astype(float).fillna(0)
+            sub = sub.reset_index()
             fig_mes.add_trace(
                 go.Bar(
                     name=status_name.title(),
